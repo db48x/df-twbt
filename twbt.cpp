@@ -131,6 +131,8 @@ enum multi_tile_type
 
 struct override {
     int type, subtype, mat_flag;
+    bool has_walkmask;
+    uint8_t walkmask;
     vector<long> small_texpos, bg_texpos, top_texpos;
     char bg, fg;
     std::string subtypename;
@@ -140,6 +142,7 @@ struct override {
 
     // Because the raws are not available when loading overrides, 
     bool material_matches(int16_t mat_type, int32_t mat_index);
+    bool walkmask_matches(uint8_t walkmask);
     long get_texpos(vector<long>&collection, unsigned int seed);
     long get_small_texpos(unsigned int seed) { return get_texpos(small_texpos, seed); }
     long get_bg_texpos(unsigned int seed) { return get_texpos(bg_texpos, seed); }

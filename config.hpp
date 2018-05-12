@@ -239,7 +239,7 @@ static bool load_text_font()
 
 // Either of
 // tile:B|I:id:type:subtype:tileset:newtile:fg:bg
-// tile:T:type:tileset:newtile:fg:bg
+// tile:T:type:walkmask:tileset:newtile:fg:bg
 // tile:tileset:newtile - disabled for now
 static bool handle_override_command(vector<string> &tokens, std::map<string, int> &tilesetnames)
 {
@@ -262,6 +262,10 @@ static bool handle_override_command(vector<string> &tokens, std::map<string, int
     // Building or Item
     if (tokens.size() >= 7 && (kind == 'B' || kind == 'I'))
     {
+        // only tiles have a walkmask
+        o.has_walkmask = false;
+        o.walkmask = 0;
+
         if (kind == 'B')
         {
             if (!parse_enum_or_int<buildings_other_id::buildings_other_id>(tokens[2], id, buildings_other_id::IN_PLAY))
@@ -328,7 +332,23 @@ static bool handle_override_command(vector<string> &tokens, std::map<string, int
         if (o.type == -1)
             return false;
 
-        basetoken = 3;
+        std::string &walkmaskstr = tokens[3];
+        if (!walkmaskstr.length()) {
+            o.has_walkmask = false;
+        } else {
+            errno = 0;
+            const char* start = walkmaskstr.c_str();
+            char* end;
+            long int walkmask = strtol(start, &end, 10);
+            if (errno != 0 || start == end) {
+                o.has_walkmask = false;
+            } else {
+                o.walkmask = (uint8_t)walkmask;
+                o.has_walkmask = true;
+            }
+        }
+
+        basetoken = 4;
     }
     /*else if (tokens.size() == 3)
     {
@@ -794,6 +814,14 @@ bool override::material_matches(int16_t mat_type, int32_t mat_index)
     }
 
     return material.mat_type == mat_type && material.mat_index == mat_index;
+}
+
+bool override::walkmask_matches(uint8_t walkmask) {
+    if (this->has_walkmask) {
+        return walkmask == this->walkmask;
+    } else {
+        return true;
+    }
 }
 
 long override::get_texpos(vector<long>&collection, unsigned int seed)

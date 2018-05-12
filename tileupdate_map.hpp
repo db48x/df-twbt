@@ -124,6 +124,15 @@ static void apply_override (texture_fullid &ret, override &o, unsigned int seed)
     }
 }
 
+static df::tiletype get_tiletype(int xx, int yy, int zz) {
+    df::map_block *block = my_block_index[(xx>>4)*world->map.y_count_block*world->map.z_count_block + (yy>>4)*world->map.z_count_block + zz];//[xx>>4][yy>>4][zz];
+    if (block)
+    {
+        return block->tiletype[xx&15][yy&15];
+    }
+    return df::tiletype::Void;
+}
+
 static void write_tile_arrays_map(renderer_cool *r, int x, int y, GLfloat *fg, GLfloat *bg, GLfloat *tex, GLfloat *tex_bg, GLfloat *fg_top, GLfloat *tex_top)
 {
     struct texture_fullid ret;
@@ -250,6 +259,7 @@ static void write_tile_arrays_map(renderer_cool *r, int x, int y, GLfloat *fg, G
                         int tiletype = block->tiletype[xx&15][yy&15];
 
                         df::tiletype tt = (df::tiletype)tiletype;
+                        uint8_t walkmask = 0;
 
                         t_matpair mat(-1,-1);
 
@@ -270,6 +280,25 @@ static void write_tile_arrays_map(renderer_cool *r, int x, int y, GLfloat *fg, G
                         }
                         MaterialInfo mat_info(mat);
 
+                        //if ((tt == df::tiletype::StoneFortification) ||
+                        //    (tt >= df::tiletype::StonePillar && tt <= df::tiletype::FrozenPillar) ||
+                        //    (tt >= df::tiletype::StoneWallWorn1 && tt <= df::tiletype::StoneWallWorn3) ||
+                        //    (tt == df::tiletype::StoneWall) ||
+                        //    (tt >= df::tiletype::LavaWallSmoothRD2 && tt <= df::tiletype::FeatureWall) ||
+                        //    (tt >= df::tiletype::FrozenFortification && tt <= df::tiletype::FrozenWall) ||
+                        //    (tt >= df::tiletype::MineralWallSmoothRD2 && tt <= df::tiletype::MineralWall) ||
+                        //    (tt >= df::tiletype::FrozenWallSmoothRD2 && tt <= df::tiletype::FrozenWallSmoothLR) ||
+                        //    (tt >= df::tiletype::ConstructedFortification && tt <= df::tiletype::ConstructedWallLR)) {
+                            // TODO(db48x): possibly we should just compute the walkmask for every tile type...
+                            for (int j = -1, n = 7; j <= 1; j++) {
+                                for (int i = -1; i <= 1; i++) {
+                                    if (!(i == 0 && j == 0)) {
+                                        walkmask |= DFHack::isWalkable(get_tiletype(xx+i, yy+j, zz)) << n--;
+                                    }
+                                }
+                            }
+                        //}
+
                         for (auto it3 = to->tiletype_overrides.begin(); it3 != to->tiletype_overrides.end(); it3++)
                         {
                             override &o = *it3;
@@ -286,6 +315,9 @@ static void write_tile_arrays_map(renderer_cool *r, int x, int y, GLfloat *fg, G
                             }
 
                             if (!o.material_matches(mat_info.type, mat_info.index))
+                                continue;
+
+                            if (!o.walkmask_matches(walkmask))
                                 continue;
 
                             apply_override(ret, o, coord_hash(xx,yy,zz));
