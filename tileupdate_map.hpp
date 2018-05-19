@@ -125,10 +125,14 @@ static void apply_override (texture_fullid &ret, override &o, unsigned int seed)
 }
 
 static df::tiletype get_tiletype(int xx, int yy, int zz) {
-    df::map_block *block = my_block_index[(xx>>4)*world->map.y_count_block*world->map.z_count_block + (yy>>4)*world->map.z_count_block + zz];//[xx>>4][yy>>4][zz];
-    if (block)
-    {
-        return block->tiletype[xx&15][yy&15];
+    if (xx >= 0 && xx < 16 * world->map.x_count_block &&
+        yy >= 0 && yy < 16 * world->map.y_count_block &&
+        zz >= 0 && zz < 16 * world->map.z_count_block) {
+        df::map_block *block = my_block_index[(xx>>4)*world->map.y_count_block*world->map.z_count_block + (yy>>4)*world->map.z_count_block + zz];//[xx>>4][yy>>4][zz];
+        if (block)
+        {
+            return block->tiletype[xx&15][yy&15];
+        }
     }
     return df::tiletype::Void;
 }
